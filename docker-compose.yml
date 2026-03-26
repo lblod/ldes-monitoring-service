@@ -1,0 +1,23 @@
+services:
+    ldes-monitoring-service:
+        image: semtech/mu-javascript-template:latest
+        depends_on:
+            - database
+        environment:
+            NODE_ENV: "development"
+        ports:
+            - 8888:80
+        volumes:
+            - ./:/app/
+            - ./dev/config.json:/config.json
+
+    database:
+        image: redpencil/virtuoso:feature-geosparql-support
+        environment:
+            SPARQL_UPDATE: "true"
+            DEFAULT_GRAPH: "http://mu.semte.ch/graphs/public"
+        volumes:
+        - ./data/db:/data
+        - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+        - ./config/virtuoso/:/opt/virtuoso-scripts
+

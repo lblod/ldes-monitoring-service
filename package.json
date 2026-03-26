@@ -1,0 +1,21 @@
+{
+    "name": "ldes-monitoring-service",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@lblod/mu-auth-sudo": "^1.1.0",
+        "@types/jsonld": "^1.5.15",
+        "@types/n3": "^1.26.1",
+        "body-parser": "^2.2.2",
+        "cron": "^4.4.0",
+        "jsonld": "^9.0.0",
+        "n3": "^2.0.3",
+        "prom-client": "^15.1.3"
+    }
+}
