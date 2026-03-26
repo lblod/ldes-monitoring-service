@@ -180,7 +180,8 @@ export async function fetchPage(
         responseText = rewriteInvalidLanguageTags(responseText);
     }
 
-    switch (response.headers.get('Content-Type')) {
+
+    switch ((response.headers.get('Content-Type')||'').split(';')[0]) {
       case 'text/turtle':
         return await parseTurtle(responseText);
       case 'application/ld+json':
