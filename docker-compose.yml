@@ -1,6 +1,6 @@
 services:
     ldes-monitoring-service:
-        image: semtech/mu-javascript-template:latest
+        image: semtech/mu-javascript-template:1.9.1
         depends_on:
             - database
         environment:

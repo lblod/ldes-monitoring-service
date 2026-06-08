@@ -11,6 +11,8 @@ import {
   isQuads,
   rewriteRelationUrls,
   EndpointStatus,
+  AccessToken,
+  JwtAuthConfig,
 } from './utils';
 import {
   sparqlEscapeUri,
@@ -20,6 +22,7 @@ import {
   sparqlEscapeInt,
   uuid,
 } from 'mu';
+import {v4 as uuidv4} from 'uuid';
 import {
   endpointUpGauge,
   observationTotal,
@@ -27,13 +30,19 @@ import {
   pagesProcessed,
 } from './metrics';
 import { updateSudo } from '@lblod/mu-auth-sudo';
+import { importJWK, SignJWT } from 'jose';
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config.json';
 const OBSERVATION_GRAPH =
   process.env.OBSERVATION_GRAPH || 'http://mu.semte.ch/graphs/observations';
 
 // NOTE: mainly used to avoid running the same job twice
 // we could use the semantic job model, but this good enough for now
-let jobQueue: string[] = [];
+
+type EntrypointKeyCache = string;
+
+let jobQueue: EntrypointKeyCache[] = [];
+
+let jwtCache: Map<EntrypointKeyCache, AccessToken|undefined>=new Map();
 
 export async function run() {
   console.log('loading config file...');
@@ -58,7 +67,7 @@ export async function run() {
 }
 
 async function monitor(config: Config) {
-  let { entrypoint } = config;
+  let { entrypoint, suffix } = config;
   let endpointStatus: EndpointStatus | undefined = undefined;
   if (jobQueue.some((e) => e === entrypoint)) {
     console.log(`skipping ${entrypoint} as it's already running`);
@@ -69,6 +78,22 @@ async function monitor(config: Config) {
   );
 
   jobQueue.push(entrypoint);
+
+  let accessToken = undefined;
+  if(config.jwtAuthConfig) {
+    console.log(`jwt for ${entrypoint} is enabled.`);
+    accessToken =  jwtCache.get(entrypoint) || await getAccessToken(config.jwtAuthConfig);
+    if((Date.now() / 1000) > accessToken!.expires_in * 0.95 ){
+      accessToken = await getAccessToken(config.jwtAuthConfig);
+    }
+    if(accessToken) {
+      config.headers.Authorization = `${accessToken.token_type} ${accessToken.access_token}`;
+      console.log(config.headers.Authorization);
+    }
+    jwtCache.set(entrypoint, accessToken);
+
+
+  }
 
   let currentPageNumber: number | undefined = 1;
   while (currentPageNumber) {
@@ -217,4 +242,58 @@ async function buildResult(es: EndpointStatus, entrypointUri: string) {
 
   let query = `INSERT DATA { GRAPH ${sparqlEscapeUri(OBSERVATION_GRAPH)} { ${triples.join('.')} }}`;
   await updateSudo(query, {}, {});
+}
+
+async function getAccessToken({
+  clientId,
+  key,
+  keyAlgorithm,
+  tokenUrl,
+  tokenAudience,
+  tokenExpiry,
+  tokenScope,
+  clientAssertionType,
+}: JwtAuthConfig) : Promise<AccessToken> {
+  console.info('Refreshing access token');
+  let tokenReq: Response;
+  try {
+    const secret = await importJWK(key);
+    const jwt = await new SignJWT({
+      iss: clientId,
+      sub: clientId,
+      aud: tokenAudience,
+      jti: uuidv4(),
+    })
+      .setProtectedHeader({ alg: keyAlgorithm, typ: 'JWT' })
+      .setIssuedAt()
+      .setExpirationTime(tokenExpiry)
+      .sign(secret);
+
+      console.log("token url", tokenUrl);
+    tokenReq = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_assertion: jwt,
+        client_assertion_type: clientAssertionType,
+        scope: tokenScope,
+      }),
+    });
+  } catch (err) {
+    console.log(`Error while attempting to refresh access token: ${err}`);
+    throw err;
+  }
+  if (!tokenReq.ok) {
+    console.log(
+      `Unexpected response refreshing access token: ${tokenReq.statusText}`,
+    );
+    throw new Error(
+      `Unexpected response refreshing access token: ${tokenReq.statusText}`,
+    );
+  }
+  return tokenReq.json();
 }
