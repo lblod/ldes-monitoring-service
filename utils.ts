@@ -57,7 +57,7 @@ export type ParseError = { kind: 'parseError'; message: string };
 
 export type Quads = { kind: 'quads'; value: Quad[] };
 
-export type EndpointStatus = {status: "up"|"error", statusCode?:number,errorType?: "parseError"|"fetchError", message?: string, nextPage?:number};
+export type EndpointStatus = {status: "up"|"error", statusCode?:number,errorType?: "parseError"|"fetchError", message?: string, nextPage?:string};
 
 export const isFetchError = (
   r: FetchError | ParseError | Quads | JSONLD,
@@ -177,13 +177,12 @@ export function applyFeedbackSnapshotFix(payload: JsonLD) {
 }
 
 export async function fetchPage(
-  pageUrl: string,
-  currentPage: number,
+  currentPage: string,
   headers: Headers,
   shouldRewriteLanguageTags?:boolean
 ): Promise<FetchError | ParseError | Quads | JSONLD> {
   try {
-    const response = await fetch(pageUrl+currentPage, {
+    const response = await fetch(currentPage, {
       headers,
     });
     if (!response.ok) {
