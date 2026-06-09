@@ -104,7 +104,7 @@ async function monitor(config: Config) {
   let previousPage: string | undefined = undefined;
   let nbPagesProcessed = 0;
   do {
-    console.log('processing page', currentPage, 'with endpoint', entrypoint);
+    console.log('processing page', currentPage);
     endpointStatus = await processPage(config, currentPage, previousPage);
     if (endpointStatus.status !== 'up') {
       console.log(
