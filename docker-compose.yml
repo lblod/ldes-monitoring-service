@@ -1,6 +1,6 @@
 services:
     ldes-monitoring-service:
-        image: semtech/mu-javascript-template:latest
+        image: lblod/ldes-monitoring-service:feature-jwt
         depends_on:
             - database
         environment:
@@ -18,6 +18,5 @@ services:
             DEFAULT_GRAPH: "http://mu.semte.ch/graphs/public"
         volumes:
         - ./data/db:/data
-        - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
-        - ./config/virtuoso/:/opt/virtuoso-scripts
+    
 

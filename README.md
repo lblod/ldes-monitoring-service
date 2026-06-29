@@ -20,7 +20,7 @@ Mount a `config.json` file (default:  `/config.json`) with an array of endpoint 
 [
   {
     "entrypoint": "https://my-ldes-stream.be/ldes/ldes",
-    "suffix": "?limit=25&pageNumber=",
+    "suffix": "?limit=25&pageNumber=1",
     "title": "My vendor ldes",
     "cronTime": "0 * * * *",
     "headers": { 
@@ -33,7 +33,7 @@ Mount a `config.json` file (default:  `/config.json`) with an array of endpoint 
    {
     "cronTime": "0 0 * * * *",
     "entrypoint": "https://ldes-mirror.be",
-    "suffix": "/",
+    "suffix": "/1",
     "title": "IPDC - Proxy(QA)",
     "headers": {
       "Authorization": "Basic ABCDEFGH",
@@ -51,6 +51,32 @@ Mount a `config.json` file (default:  `/config.json`) with an array of endpoint 
 | `headers` | http headers (e.g. `Accept`, `Authorization`, `X-API-KEY` ) |
 | `rewriteInvalidLanguageTags` | fix malformed language tags before parsing |
 | `rewriteRelationUrls` | rewrite relation urls in jsonld payloads |
+
+
+### JWT Authentication
+
+Endpoints can authenticate using JWT. Add a `jwtAuthConfig` block to the endpoint config:
+
+```json
+{
+  "entrypoint": "https://secure-ldes.be/ldes",
+  "suffix": "",
+  "cronTime": "0 * * * *",
+  "headers": { "Accept": "application/ld+json" },
+  "jwtAuthConfig": {
+    "clientId": "my-client-id",
+    "key": { "kty": "RSA", "n": "...", "e": "AQAB", "d": "..." },
+    "keyAlgorithm": "RS256",
+    "tokenUrl": "https://auth.example.be/token",
+    "tokenAudience": "https://secure-ldes.be",
+    "tokenExpiry": "5m",
+    "tokenScope": "read:ldes",
+    "clientAssertionType": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+  }
+}
+```
+
+Set `jwtAuthConfig: false` to explicitly disable JWT auth for an endpoint. 
 
 ## API
 

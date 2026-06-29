@@ -1,3 +1,4 @@
+import { JWK } from 'jose';
 import { Parser, Quad } from 'n3';
 
 export type Headers = {
@@ -5,7 +6,12 @@ export type Headers = {
   Authorization?: string;
   Accept: string;
 };
-
+export type AccessToken = {
+  access_token: string;
+  token_type: string;
+  scope: string;
+  expires_in: number;
+};
 export type JsonLD = {
   '@context'?:
     | string
@@ -27,6 +33,18 @@ export type Config = {
   applyFeedbackSnapshotFix?: boolean;
   rewriteRelationUrls?: boolean;
   rewriteInvalidLanguageTags?: boolean;
+  jwtAuthConfig?: JwtAuthConfig | false;
+};
+
+export type JwtAuthConfig = {
+  clientId: string;
+  key: JWK;
+  keyAlgorithm: string;
+  tokenUrl: string;
+  tokenAudience: string;
+  tokenExpiry: string;
+  tokenScope: string;
+  clientAssertionType: string;
 };
 
 export type FetchError = {
@@ -39,7 +57,7 @@ export type ParseError = { kind: 'parseError'; message: string };
 
 export type Quads = { kind: 'quads'; value: Quad[] };
 
-export type EndpointStatus = {status: "up"|"error", statusCode?:number,errorType?: "parseError"|"fetchError", message?: string, nextPage?:number};
+export type EndpointStatus = {status: "up"|"error", statusCode?:number,errorType?: "parseError"|"fetchError", message?: string, nextPage?:string};
 
 export const isFetchError = (
   r: FetchError | ParseError | Quads | JSONLD,
@@ -159,13 +177,12 @@ export function applyFeedbackSnapshotFix(payload: JsonLD) {
 }
 
 export async function fetchPage(
-  pageUrl: string,
-  currentPage: number,
+  currentPage: string,
   headers: Headers,
   shouldRewriteLanguageTags?:boolean
 ): Promise<FetchError | ParseError | Quads | JSONLD> {
   try {
-    const response = await fetch(pageUrl+currentPage, {
+    const response = await fetch(currentPage, {
       headers,
     });
     if (!response.ok) {
