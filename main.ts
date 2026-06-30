@@ -14,6 +14,7 @@ import {
   AccessToken,
   JwtAuthConfig,
   JsonLD,
+  BrokenPage,
 } from './utils';
 import {
   sparqlEscapeUri,
@@ -142,6 +143,7 @@ async function processPage(
     headers,
     rewriteInvalidLanguageTags,
     rewriteRelationUrls: shouldRewriteRelationUrls,
+    skipCyclesMapping
   } = config;
   const result = await fetchPage(
     currentPage,
@@ -198,12 +200,18 @@ async function processPage(
   if (quads) {
     nextPage = extractNextPage(quads, entrypoint + suffix);
     if (nextPage === previousPage) {
-      return {
-        message: `possible cycle detected. nextPage (${nextPage}) is equal to previous page (${previousPage})`,
-        errorType: 'parseError',
-        status: 'error',
-        nextPage: currentPage,
-      };
+      if (skipCyclesMapping?.[nextPage as BrokenPage]) {
+        nextPage = skipCyclesMapping[nextPage as BrokenPage];
+        
+        console.log(`possible cycle detected for page ${previousPage}. Try to skip using ${nextPage} provided in config.`);
+      } else {
+        return {
+          message: `possible cycle detected. nextPage (${nextPage}) is equal to previous page (${previousPage})`,
+          errorType: 'parseError',
+          status: 'error',
+          nextPage: currentPage,
+        };
+      }
     }
   }
   return { status: 'up', nextPage };

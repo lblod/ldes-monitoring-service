@@ -24,12 +24,16 @@ export type JsonLD = {
 
 export type JSONLD = { kind: 'jsonLD'; value: JsonLD };
 
+export type BrokenPage = string;
+export type NextPage = string;
+
 export type Config = {
   entrypoint: string;
   suffix: string;
   title?: string;
   cronTime: string;
   headers: Headers;
+  skipCyclesMapping?: Record<BrokenPage, NextPage>;
   applyFeedbackSnapshotFix?: boolean;
   rewriteRelationUrls?: boolean;
   rewriteInvalidLanguageTags?: boolean;
