@@ -132,3 +132,21 @@ If the endpoint is down, an `oslc:Error` is also created and linked:
 
 <observation> sosa:hasResult <error> .
 ```
+
+## Handling Broken Pagination Cycles
+
+Some LDES endpoints may contain broken pagination cycles.
+
+To work around this, you can add `skipCyclesMapping` in the configuration.
+
+### Example
+
+```json
+{
+  "skipCyclesMapping": {
+    "https://secure-ldes-service.be/by-page?pageNumber=broken-page-id": "https://secure-ldes-service.be/by-page?pageNumber=next-working-page-id"
+  }
+}
+```
+
+This option is a temporary workaround for known pagination issues in specific LDES endpoints and should only be used when the correct next page is known.
